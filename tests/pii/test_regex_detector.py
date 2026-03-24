@@ -32,5 +32,14 @@ def test_regex_detector_rejects_invalid_values() -> None:
     assert all(match.entity_type != "IPV4" for match in matches)
 
 
+def test_regex_detector_handles_multiline_text_and_month_name_dates() -> None:
+    text = "Notes:\nFollow up on June 14, 2025.\nReach jane@example.com tomorrow."
+
+    matches = RegexDetector().detect(text)
+
+    assert any(match.entity_type == "DATE" and match.text == "June 14, 2025" for match in matches)
+    assert any(match.entity_type == "EMAIL" and match.text == "jane@example.com" for match in matches)
+
+
 def test_regex_detector_returns_empty_for_empty_input() -> None:
     assert RegexDetector().detect("") == []

@@ -60,3 +60,15 @@ def test_merge_filters_common_false_positives_with_context_hooks() -> None:
     assert len(merged) == 1
     assert merged[0].entity_type == "DATE"
     assert merged[0].text == "June"
+
+
+def test_merge_filters_sentence_initial_imperative_false_positive() -> None:
+    text = "Email jane@example.com for access."
+    email_person_match = _make_match(text, "Email", "PERSON", DetectorSource.SPACY, 0.66)
+    email_match = _make_match(text, "jane@example.com", "EMAIL", DetectorSource.REGEX, 0.99)
+
+    merged = merge_pii_matches(text, [email_person_match, email_match])
+
+    assert len(merged) == 1
+    assert merged[0].entity_type == "EMAIL"
+    assert merged[0].text == "jane@example.com"

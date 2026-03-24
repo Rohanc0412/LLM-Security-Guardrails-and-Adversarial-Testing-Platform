@@ -89,3 +89,13 @@ def test_redaction_applies_replacements_end_to_start() -> None:
     result = redact_text(text, matches, strategy_overrides={"DEFAULT": RedactionStrategy.MASK})
 
     assert result.redacted_text == "Email ****@*******.*** then SSN ***-**-****"
+
+
+def test_redaction_accepts_string_strategy_overrides() -> None:
+    text = "Email jane@example.com"
+    matches = [_match(text, "jane@example.com", "EMAIL")]
+
+    result = redact_text(text, matches, strategy_overrides={"EMAIL": "partial"})
+
+    assert result.redactions[0].strategy == RedactionStrategy.PARTIAL
+    assert result.redacted_text == "Email j***@e******.com"

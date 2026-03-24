@@ -7,6 +7,29 @@ from functools import lru_cache
 from typing import Callable
 
 Validator = Callable[[str], bool]
+DATE_FORMATS = (
+    "%Y-%m-%d",
+    "%m/%d/%Y",
+    "%m/%d/%y",
+    "%B %d, %Y",
+    "%b %d, %Y",
+    "%B %d",
+    "%b %d",
+)
+MONTH_NAMES = (
+    "Jan(?:uary)?",
+    "Feb(?:ruary)?",
+    "Mar(?:ch)?",
+    "Apr(?:il)?",
+    "May",
+    "Jun(?:e)?",
+    "Jul(?:y)?",
+    "Aug(?:ust)?",
+    "Sep(?:tember)?",
+    "Oct(?:ober)?",
+    "Nov(?:ember)?",
+    "Dec(?:ember)?",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,18 +108,7 @@ def _validate_ipv4(value: str) -> bool:
 
 def _validate_date(value: str) -> bool:
     value = value.strip()
-    formats = (
-        "%Y-%m-%d",
-        "%m/%d/%Y",
-        "%m/%d/%y",
-        "%m/%d/%Y",
-        "%m/%d/%y",
-        "%B %d, %Y",
-        "%b %d, %Y",
-        "%B %d",
-        "%b %d",
-    )
-    for candidate in formats:
+    for candidate in DATE_FORMATS:
         try:
             datetime.strptime(value, candidate)
             return True
@@ -105,22 +117,9 @@ def _validate_date(value: str) -> bool:
     return False
 
 
+@lru_cache(maxsize=1)
 def get_pattern_definitions() -> tuple[RegexPattern, ...]:
-    month_names = (
-        "Jan(?:uary)?",
-        "Feb(?:ruary)?",
-        "Mar(?:ch)?",
-        "Apr(?:il)?",
-        "May",
-        "Jun(?:e)?",
-        "Jul(?:y)?",
-        "Aug(?:ust)?",
-        "Sep(?:tember)?",
-        "Oct(?:ober)?",
-        "Nov(?:ember)?",
-        "Dec(?:ember)?",
-    )
-    month_pattern = "|".join(month_names)
+    month_pattern = "|".join(MONTH_NAMES)
     return (
         RegexPattern(
             name="email",

@@ -25,28 +25,41 @@ class PresidioDetector:
         self.language = language
         self._analyzer_provider = analyzer_provider
         self._analyzer: Any | None = None
+        self._load_failed = False
 
     def _load_analyzer(self) -> Any | None:
         if self._analyzer is not None:
             return self._analyzer
+        if self._load_failed:
+            return None
         if self._analyzer_provider is not None:
-            self._analyzer = self._analyzer_provider()
+            try:
+                self._analyzer = self._analyzer_provider()
+            except Exception:
+                self._load_failed = True
+                return None
+            if self._analyzer is None:
+                self._load_failed = True
+                return None
             return self._analyzer
         try:
             module = importlib.import_module("presidio_analyzer")
         except ImportError:
+            self._load_failed = True
             return None
         engine_class = getattr(module, "AnalyzerEngine", None)
         if engine_class is None:
+            self._load_failed = True
             return None
         try:
             self._analyzer = engine_class()
         except Exception:
+            self._load_failed = True
             return None
         return self._analyzer
 
     def detect(self, text: str) -> list[PIIMatch]:
-        if not text:
+        if not text or not any(character.isalnum() for character in text):
             return []
 
         analyzer = self._load_analyzer()

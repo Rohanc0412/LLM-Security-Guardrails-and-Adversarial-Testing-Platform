@@ -14,6 +14,7 @@ services:
     command: >
       sh -c "pip install --upgrade pip &&
       pip install --no-cache-dir -r requirements.txt &&
+      python -m spacy download en_core_web_sm &&
       alembic -c alembic/alembic.ini upgrade head &&
       uvicorn backend.app.main:app --host $${APP_HOST:-0.0.0.0} --port $${APP_PORT:-8000}"
     ports:

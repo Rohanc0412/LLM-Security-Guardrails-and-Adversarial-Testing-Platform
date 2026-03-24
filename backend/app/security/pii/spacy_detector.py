@@ -7,6 +7,14 @@ from .models import DetectorSource, PIIMatch
 
 
 class SpacyDetector:
+    DISABLED_PIPELINE_COMPONENTS = (
+        "tagger",
+        "parser",
+        "attribute_ruler",
+        "lemmatizer",
+        "morphologizer",
+        "senter",
+    )
     LABEL_MAPPING = {
         "PERSON": "PERSON",
         "DATE": "DATE",
@@ -25,25 +33,37 @@ class SpacyDetector:
         self.model_name = model_name
         self._loader = loader
         self._nlp: Any | None = None
+        self._load_failed = False
 
     def _load_model(self) -> Any | None:
         if self._nlp is not None:
             return self._nlp
+        if self._load_failed:
+            return None
         if self._loader is not None:
-            self._nlp = self._loader()
+            try:
+                self._nlp = self._loader()
+            except Exception:
+                self._load_failed = True
+                return None
+            if self._nlp is None:
+                self._load_failed = True
+                return None
             return self._nlp
         try:
             spacy = importlib.import_module("spacy")
         except ImportError:
+            self._load_failed = True
             return None
         try:
-            self._nlp = spacy.load(self.model_name)
+            self._nlp = spacy.load(self.model_name, exclude=list(self.DISABLED_PIPELINE_COMPONENTS))
         except Exception:
+            self._load_failed = True
             return None
         return self._nlp
 
     def detect(self, text: str) -> list[PIIMatch]:
-        if not text:
+        if not text or not any(character.isalpha() for character in text):
             return []
 
         nlp = self._load_model()

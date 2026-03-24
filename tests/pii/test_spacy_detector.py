@@ -32,11 +32,26 @@ def test_spacy_detector_lazy_loads_once_and_normalizes_entities() -> None:
 
 
 def test_spacy_detector_returns_empty_when_dependency_is_missing(monkeypatch) -> None:
+    import_attempts = {"count": 0}
+
     def fake_import(name: str):
         if name == "spacy":
+            import_attempts["count"] += 1
             raise ImportError
         return importlib.import_module(name)
 
     monkeypatch.setattr("backend.app.security.pii.spacy_detector.importlib.import_module", fake_import)
 
-    assert SpacyDetector().detect("Alice") == []
+    detector = SpacyDetector()
+    assert detector.detect("Alice") == []
+    assert detector.detect("Alice") == []
+    assert import_attempts["count"] == 1
+
+
+def test_spacy_detector_skips_model_loading_for_non_alpha_text() -> None:
+    def loader():
+        raise AssertionError("loader should not be called for non-alphabetic text")
+
+    detector = SpacyDetector(loader=loader)
+
+    assert detector.detect("1234 5678 90") == []

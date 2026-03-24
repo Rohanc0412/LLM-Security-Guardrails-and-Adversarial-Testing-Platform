@@ -3,6 +3,10 @@ from __future__ import annotations
 from backend.app.security.pii.patterns import get_compiled_patterns, get_pattern_definitions
 
 
+def test_pattern_definitions_are_cached() -> None:
+    assert get_pattern_definitions() is get_pattern_definitions()
+
+
 def test_compiled_patterns_are_cached() -> None:
     assert get_compiled_patterns() is get_compiled_patterns()
 

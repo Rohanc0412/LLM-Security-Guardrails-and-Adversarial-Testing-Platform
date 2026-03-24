@@ -5,6 +5,7 @@ import re
 from .models import PIIMatch
 
 COMMON_PERSON_FALSE_POSITIVES = frozenset({"may", "june", "will"})
+IMPERATIVE_PERSON_FALSE_POSITIVES = frozenset({"email", "call", "contact", "reach", "text"})
 MONTH_PREPOSITIONS = frozenset({"in", "on", "by", "during", "through", "until", "from"})
 MODAL_PREVIOUS_WORDS = frozenset({"i", "we", "you", "they", "he", "she", "it"})
 MODAL_NEXT_WORDS = frozenset(
@@ -42,10 +43,13 @@ def is_contextual_false_positive(text: str, match: PIIMatch) -> bool:
     token = match.text.strip().lower()
     previous, following = _neighbor_tokens(text, match.start, match.end)
 
-    if match.entity_type == "PERSON" and token in COMMON_PERSON_FALSE_POSITIVES:
-        if token == "will":
-            return previous in MODAL_PREVIOUS_WORDS or following in MODAL_NEXT_WORDS
-        return previous in MONTH_PREPOSITIONS or (following is not None and following.isdigit())
+    if match.entity_type == "PERSON":
+        if token in IMPERATIVE_PERSON_FALSE_POSITIVES:
+            return match.start == 0
+        if token in COMMON_PERSON_FALSE_POSITIVES:
+            if token == "will":
+                return previous in MODAL_PREVIOUS_WORDS or following in MODAL_NEXT_WORDS
+            return previous in MONTH_PREPOSITIONS or (following is not None and following.isdigit())
 
     if match.entity_type == "DATE" and token in {"may", "june"}:
         return following is None or not following.isdigit()

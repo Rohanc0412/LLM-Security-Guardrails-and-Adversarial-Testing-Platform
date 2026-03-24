@@ -86,3 +86,21 @@ def test_service_detect_and_redact_handles_empty_and_already_redacted_text() -> 
 
     assert service.detect("").total_matches == 0
     assert service.detect_and_redact("[EMAIL_REDACTED]").redacted_text == "[EMAIL_REDACTED]"
+
+
+def test_service_detect_regex_only_reports_only_regex_detector() -> None:
+    text = "Email jane@example.com"
+    regex_match = _match(text, "jane@example.com", "EMAIL", DetectorSource.REGEX, 0.99)
+
+    service = PIIService(
+        regex_detector=StubDetector([regex_match]),
+        spacy_detector=StubDetector([]),
+        presidio_detector=StubDetector([]),
+        enable_spacy=False,
+        enable_presidio=False,
+    )
+
+    result = service.detect(text)
+
+    assert result.total_matches == 1
+    assert result.detectors_run == (DetectorSource.REGEX,)
