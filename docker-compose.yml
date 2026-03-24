@@ -1,6 +1,9 @@
 services:
   api:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: llm-security-guardrails-api:phase1
     working_dir: /workspace
     volumes:
       - .:/workspace
@@ -12,13 +15,20 @@ services:
       APP_HOST: 0.0.0.0
       APP_PORT: 8000
     command: >
-      sh -c "pip install --upgrade pip &&
-      pip install --no-cache-dir -r requirements.txt &&
-      python -m spacy download en_core_web_sm &&
-      alembic -c alembic/alembic.ini upgrade head &&
+      sh -c "alembic -c alembic/alembic.ini upgrade head &&
       uvicorn backend.app.main:app --host $${APP_HOST:-0.0.0.0} --port $${APP_PORT:-8000}"
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
